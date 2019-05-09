@@ -3,7 +3,7 @@
 ## Working example (aerocom3_GISS-MATRIX_GLOFIR0p5_ec550aer_ModelLevel_2008_daily.nc)
 
 ### Output ncdump -h 
-
+```
 netcdf aerocom3_GISS-MATRIX_GLOFIR0p5_ec550aer_ModelLevel_2008_daily {
 dimensions:
 	time = 2 ;
@@ -119,4 +119,4 @@ variables:
 		:realization = 1 ;
 		:cmor_version = "2.5.7" ;
 }
-
+```
