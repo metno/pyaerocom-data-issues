@@ -11,51 +11,52 @@ import numpy as np
 import pyaerocom as pya
 import xarray as xarr
 
-READ_ONLY_CORRECTED = True
+def check_file_okay(file):
+    issues = []
+    OK = True
+    try:
+        ds = xarr.open_dataset(file)
+    except ValueError as e:
+        OK = False
+        if 'month' in repr(e):
+            issues.append('Invalid calendar. Error: {}'.format(repr(e)))
+            ds = xarr.open_dataset(file, decode_times=False)
+            ds.time.attrs['calendar'] = 'standard'
+        else:
+            raise
+    if not ds.lev.standard_name == 'atmosphere_hybrid_sigma_pressure_coordinate':
+        OK = False
+        issues.append('Invalid standard name for lev coordinate: {}'.format(ds.lev.standard_name))
+        ds.lev.attrs['standard_name'] = 'atmosphere_hybrid_sigma_pressure_coordinate'
+    
+    if ds.lev.data[0] == ds.lev.data[1]:
+        OK = False
+        issues.append('Level values not strictly monotonic')
+        lev_vals = np.arange(len(ds.lev.data))
+        ds.lev.data = lev_vals
+        
+    if not OK:
+        file = file.split('.nc')[0] + '_CORR.nc'
+        ds.to_netcdf(file)
+    return (file, OK, issues)
 
-CORR_FILE = 'aerocom3_OsloCTM3v1.01-met2010_AP3-CTRL_ec550aer_ModelLevel_2010_monthly_CALENDAR_CORR_LEV_CORR.nc'
-if READ_ONLY_CORRECTED:
-    d = pya.GriddedData(CORR_FILE, var_name='ec550aer')
-    print(d)
-else:
 
-    for file in glob.glob('*CALENDAR_CORR.nc'):
-        os.remove(file)
+
+for file in glob.glob('*CORR.nc'):
+    os.remove(file)
+
+
+file = glob.glob('aerocom3_Oslo*monthly.nc')[0]
+print(file)
+
+(file, OK, issues) = check_file_okay(file)
     
-    CALENDAR_OK = False
-    files = glob.glob('aerocom*monthly.nc')
-    print(files)
+d = pya.GriddedData(file, var_name='ec550aer')
+print(d)    
+
+if len(issues) > 0:
+    print('------------------------------------------')
+    print('Detected following issues:')
+for issue in issues:
+    print(issue)
     
-    def check_lev_okay(file):
-        
-        d = pya.GriddedData(file,var_name='ec550aer')
-        if 'lev' in d.dimcoord_names:
-            return (True, file)
-        
-        ds_lev_wrong = xarr.open_dataset(file)
-        
-        lev = np.arange(len(ds_lev_wrong.lev.data))
-        ds_lev_wrong.lev.data = lev
-        file_corr = file.split('.nc')[0] + '_LEV_CORR.nc'
-        ds_lev_wrong.to_netcdf(file_corr)
-        return (False, file_corr)
-    
-    for file in files:
-        try:
-            ds = xarr.open_dataset(file)
-            CALENDAR_OK = True
-        except ValueError as e:
-            if 'month' in repr(e):
-                ds_wrong = xarr.open_dataset(file, decode_times=False)
-                ds_wrong.time.attrs['calendar'] = 'standard'
-                ds_wrong.to_netcdf(file.split('.nc')[0] + '_CALENDAR_CORR.nc')
-        
-    if CALENDAR_OK:
-        file = glob.glob('aerocom*monthly.nc')[0]
-    else:
-        file = glob.glob('aerocom*monthly_CALENDAR_CORR.nc')[0]
-        
-    (LEV_OK, file) = check_lev_okay(file)
-        
-    d = pya.GriddedData(file, var_name='ec550aer')
-    print(d)
