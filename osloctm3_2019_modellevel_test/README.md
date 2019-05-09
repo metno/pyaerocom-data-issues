@@ -1,8 +1,11 @@
 # Checking of modellevel data files
 
-## Working example (aerocom3_GISS-MATRIX_GLOFIR0p5_ec550aer_ModelLevel_2008_daily.nc)
+## Working example (Model GISS-MATRIX)
 
-### Output ncdump -h 
+File: aerocom3_GISS-MATRIX_GLOFIR0p5_ec550aer_ModelLevel_2008_daily.nc
+
+
+### Output ncdump
 ```
 netcdf aerocom3_GISS-MATRIX_GLOFIR0p5_ec550aer_ModelLevel_2008_daily {
 dimensions:
